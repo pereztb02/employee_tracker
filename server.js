@@ -127,16 +127,17 @@ const addEmployee = async () => {
     name: role.title,
     value: role.id,
   }));
-  const deptData = await db.promise().query("SELECT * FROM department");
-  const deptArray = deptData[0].map((department) => ({
-    name: department.name,
-    value: department.id,
-  }));
+  // const deptData = await db.promise().query("SELECT * FROM department");
+  // // const deptArray = deptData[0].map((department) => ({
+  // //   name: department.name,
+  // //   value: department.id,
+  // // }));
   const managerArray = employeeData[0].map((employee) => ({
     name: employee.first_name,
     value: employee.id,
   }));
-  inquirer.prompt([
+  inquirer
+    .prompt([
       { type: "input", name: "first_name", message: "First name: " },
       { type: "input", name: "last_name", message: "Last name: " },
       {
@@ -151,13 +152,13 @@ const addEmployee = async () => {
         message: "What is their role?",
         choices: [...roleArray, { name: "Enter new role", value: "newRole" }],
       },
-      { type: "input", name: "salary", message: "Salary: " },
-      {
-        type: "list",
-        name: "department_id",
-        message: "Add to which department?",
-        choices: deptArray,
-      },
+      // { type: "input", name: "salary", message: "Salary: " },
+      // {
+      //   type: "list",
+      //   name: "department_id",
+      //   message: "Add to which department?",
+      //   choices: deptArray,
+      // },
     ])
     .then(async (answers) => {
       if (answers.role === "newRole") {
@@ -167,19 +168,20 @@ const addEmployee = async () => {
           name: "newRole",
           message: "Enter the new role:",
         });
-      
+      }
+
         // Insert the new role into the database
-        const result = await db
+        // const result = await db
+        //   .promise()
+        //   .query("INSERT INTO role (title, salary) VALUES (?, ?)", [
+        //     newRoleAnswer.newRole,
+        //     answers.salary,
+        //   ]);
+        // console.log(`New role added: ${newRoleAnswer.newRole}`);
+
+        const employeeResult = await db
           .promise()
-          .query("INSERT INTO role (title, salary) VALUES (?, ?)", [
-            newRoleAnswer.newRole,
-            answers.salary,
-          ]);
-        console.log(`New role added: ${newRoleAnswer.newRole}`);
-      
-      const employeeResult = await db
-        .promise()
-        .query("INSERT INTO employee SET ?", {
+          .query("INSERT INTO employee SET ?", {
             first_name: answers.first_name,
             last_name: answers.last_name,
             role_id: answers.role,
@@ -187,43 +189,49 @@ const addEmployee = async () => {
             // Ensure a valid department_id is provided
             // department_id: answers.department_id !== "newDept" ? answers.department_id : null,
           });
-      console.table(employeeResult);
-      questions();
-    }});
+        console.table(employeeResult);
+        questions();
+      }
+    );
+};
 
-    const updateEmployeeRole = () => {
-      const employeeData = db.promise().query("SELECT * FROM employee");
-      const employeeArray = employeeData[0].map((employee) => ({
-        name: employee.first_name,
-        value: employee.id,
-      }));
-      const deptData = db.promise().query("SELECT * FROM department");
+const updateEmployeeRole = async () => {
+  const employeeData = await db.promise().query("SELECT * FROM employee");
+  const employeeArray = employeeData[0].map((employee) => ({
+    name: employee.first_name,
+    value: employee.id,
+  }));
+  console.log(employeeArray);
+  const deptData = await db.promise().query("SELECT * FROM role");
   const deptArray = deptData[0].map((department) => ({
-    name: department.name,
+    name: department.title,
     value: department.id,
   }));
-      inquirer
-      .prompt([
-        { type: "list", 
-        choices : [employeeArray],
-        name: "first_name", message: "Which employee do you want to update?", 
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        choices: employeeArray,
+        name: "first_name",
+        message: "Which employee do you want to update?",
       },
-        { type: "list",
-        choices: [deptArray],
+      {
+        type: "list",
+        choices: deptArray,
         name: "name",
         message: "Choose new role: ",
       },
-      ])
-      .then((answers) => {
-        db.query("INSERT INTO department SET ?", answers, (err, data) => {
-          if (err) {
-            console.log(err);
-          }
-          console.table(data);
-          questions();
-        });
+    ])
+    .then((answers) => {
+      db.query("UPDATE employee SET role_id = ? WHERE id = ?", [answers.name, answers.first_name], (err, data) => {
+        if (err) {
+          console.log(err);
+        }
+        console.table(data);
+        questions();
       });
-    }
-    // .catch((err) => console.error(err));
+    });
 };
+// .catch((err) => console.error(err));
+
 questions();
